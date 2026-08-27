@@ -1,0 +1,22 @@
+# Node & SvelteKit
+node_modules/
+.svelte-kit/
+build/
+dist/
+
+# PocketBase data & local binaries
+pb_data/
+*.exe
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.user

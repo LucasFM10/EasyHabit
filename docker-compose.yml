@@ -1,0 +1,62 @@
+# ============================================================
+# Docker Compose — Desenvolvimento local e produção
+# ============================================================
+# Para rodar tudo via Docker: docker compose up --build
+# No Coolify: Suporta deploy como 1 Recurso Único ou Separado
+# ============================================================
+
+services:
+  # --------------------------------------------------------
+  # PocketBase — Backend/BaaS
+  # --------------------------------------------------------
+  pocketbase:
+    build:
+      context: ./apps/pocketbase
+      dockerfile: Dockerfile
+      args:
+        PB_VERSION: "${PB_VERSION:-0.39.4}"
+    environment:
+      - PB_SUPERUSER_EMAIL=${PB_SUPERUSER_EMAIL:-admin@admin.com}
+      - PB_SUPERUSER_PASSWORD=${PB_SUPERUSER_PASSWORD:-admin123456}
+      - SERVICE_URL_POCKETBASE_8090=/
+    env_file:
+      - .env
+    expose:
+      - "8090"
+    volumes:
+      - pb_data:/app/pb_data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://127.0.0.1:8090/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------
+  # Web — Frontend SvelteKit
+  # --------------------------------------------------------
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    environment:
+      SERVICE_URL_WEB: /
+      POCKETBASE_HOST: "${SERVICE_FQDN_POCKETBASE}"
+    expose:
+      - "80"
+    
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pb_data:
+    driver: local
