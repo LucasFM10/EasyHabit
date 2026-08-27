@@ -17,6 +17,18 @@ class AuthState {
 		return await pb.collection('users').authWithPassword(email, pass);
 	}
 
+	async register(name: string, email: string, pass: string, inviteCode: string) {
+		await pb.collection('users').create({
+			name: name.trim(),
+			email: email.trim(),
+			password: pass,
+			passwordConfirm: pass,
+			inviteCode
+		});
+
+		return await this.login(email, pass);
+	}
+
 	logout() {
 		pb.authStore.clear();
 	}

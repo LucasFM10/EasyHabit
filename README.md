@@ -1,109 +1,77 @@
-# 🚀 Monorepo Template — SvelteKit + PocketBase
+# EasyHabit
 
-Este é um **Template Monorepo** completo e pronto para uso ("plug-and-play") combinando **SvelteKit 5** no frontend e **PocketBase** no backend.
+Agenda pessoal simples feita com SvelteKit 5 e PocketBase. Cada conta possui sua própria agenda privada e pode criar, editar e excluir compromissos no calendário.
 
----
+## Funcionalidades
 
-## ⚡ Como Iniciar um Novo Projeto a partir deste Template
+- Login e criação de conta
+- Cadastro protegido por código de acesso
+- Calendário mensal responsivo
+- Criação, edição e exclusão de compromissos
+- Isolamento dos dados por usuário nas regras do PocketBase
+- Criação automática do superusuário do PocketBase
 
-### 1. Clonar o Repositório
-```bash
-git clone https://github.com/LucasFM10/Template-PocketBase-SveltKit.git meu-novo-projeto
-cd meu-novo-projeto
-```
+## Executar o projeto
 
-### 2. Rodar a Aplicação (O setup é 100% automático no 1º boot!)
+No PowerShell:
 
-#### Opção A — Método Padrão (Orquestrador Inteligente):
 ```powershell
 .\scripts\rodar.ps1
 ```
-*(No Prompt de Comando do Windows, use `.\scripts\rodar.bat` ou no Linux/macOS `./scripts/rodar.sh`)*
 
-#### Opção B — Forçar Docker 🐳:
+O script pergunta qual modo deve ser usado. Para escolher diretamente, use `--cd` (com Docker) ou `--sd` (sem Docker):
+
 ```powershell
-.\scripts\rodar-com-docker.ps1
+.\scripts\rodar.ps1 --cd
+.\scripts\rodar.ps1 --sd
 ```
 
-#### Opção C — Forçar Sem Docker 🚀:
-```powershell
-.\scripts\rodar-sem-docker.ps1
-```
+As mesmas flags funcionam com `rodar.bat` no Prompt de Comando e `rodar.sh` no Linux/macOS.
 
----
+## Endereços locais
 
-## 🌐 URLs do Projeto
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- API PocketBase: [http://localhost:8090](http://localhost:8090)
+- Painel PocketBase: [http://localhost:8090/_/](http://localhost:8090/_/)
 
-- **Frontend SvelteKit:** [http://localhost:5173](http://localhost:5173)
-- **API do PocketBase:** [http://localhost:8090](http://localhost:8090)
-- **Dashboard Admin do PocketBase:** [http://localhost:8090/_/](http://localhost:8090/_/)
+## Configuração
 
-### 🔐 Credenciais Padrão do Admin
-O PocketBase já cria um superusuário automático no primeiro boot (configurável no `.env` da raiz):
-- **E-mail:** `admin@admin.com`
-- **Senha:** `admin123456`
+As variáveis ficam no arquivo `.env` da raiz. Use `.env.example` como referência:
 
----
+- `SERVICE_FQDN_POCKETBASE`: hostname do PocketBase; localmente, `127.0.0.1:8090`.
+- `PB_SUPERUSER_EMAIL`: e-mail do superusuário criado no primeiro boot.
+- `PB_SUPERUSER_PASSWORD`: senha do superusuário criado no primeiro boot.
 
-## 🔑 Variáveis de Ambiente (`.env` na Raiz)
+O código de acesso para novos cadastros está validado pela regra de criação da coleção `users`, na migração da agenda. Enquanto o projeto estiver em validação, altere o código no frontend e na migração em conjunto caso queira rotacioná-lo.
 
-Todas as variáveis do projeto ficam centralizadas no arquivo **`.env`** (e **`.env.example`**) localizado na **raiz do projeto**:
+## PocketBase
 
-* **`SERVICE_FQDN_POCKETBASE`**: hostname público do PocketBase, disponibilizado pelo Coolify em runtime. Localmente, use `127.0.0.1:8090`.
-* **`PB_SUPERUSER_EMAIL`**: e-mail do superusuário inicial do PocketBase.
-* **`PB_SUPERUSER_PASSWORD`**: senha do superusuário inicial do PocketBase.
+A migração configura:
 
-## 🚀 Deploy em Produção (Coolify)
+- `users`: cadastro por e-mail e senha, protegido por código de acesso.
+- `appointments`: compromissos privados vinculados ao usuário autenticado.
 
-O projeto suporta **duas abordagens de deploy** no Coolify:
+Ao atualizar uma instalação anterior, a migração faz um reset único das coleções da aplicação e das contas comuns. As coleções internas e o superusuário configurado são preservados.
 
-#### 🟢 Abordagem 1: 1 Único Recurso (Docker Compose — Recomendado ⭐)
-Cria **1 único recurso do tipo "Docker Compose"** apontando para a raiz do repositório.
+## Deploy no Coolify
 
-1. No Coolify, selecione **+ New Resource** → **Docker Compose** → Conecte ao seu repositório Git.
-2. O Coolify detectará o arquivo `docker-compose.yml` automaticamente.
-3. Na aba **Environment Variables**, adicione apenas `PB_SUPERUSER_EMAIL` e `PB_SUPERUSER_PASSWORD`. Os domínios dos serviços `web` e `pocketbase` são gerados automaticamente pelas variáveis mágicas do Compose.
-4. Se desejar, substitua os domínios automáticos por domínios próprios na configuração de cada serviço.
-5. Clique em **Deploy**. Ambas as aplicações sobem juntas em uma única Stack!
+O projeto pode ser publicado como um recurso Docker Compose apontando para a raiz do repositório. Configure `PB_SUPERUSER_EMAIL` e `PB_SUPERUSER_PASSWORD`; o hostname público do PocketBase é repassado ao frontend pelo Compose.
 
-> [!IMPORTANT]
-> **🌐 Lembrete de Domínios & URLs no Coolify:**
-> * **URL pública do PocketBase:** O Coolify fornece `SERVICE_FQDN_POCKETBASE` ao container `web`. Quando o Nginx inicia, seu mecanismo nativo de templates gera `/env.js`. O frontend usa o mesmo protocolo da página (`http` localmente e `https` em produção).
+Também é possível publicar os serviços separadamente usando os Dockerfiles em `apps/web` e `apps/pocketbase`.
 
-#### 🔵 Abordagem 2: Serviços Separados (Public Dockerfile)
-Cria **2 recursos individuais** no Coolify:
-
-1. **Recurso `pocketbase` (Backend):**
-   * Tipo: **Public Dockerfile** → Base Directory: `/apps/pocketbase`.
-   * Environment Variables: `PB_SUPERUSER_EMAIL` e `PB_SUPERUSER_PASSWORD`.
-2. **Recurso `web` (SvelteKit Frontend):**
-   * Tipo: **Public Dockerfile** → Base Directory: `/apps/web`.
-   * Informe `SERVICE_FQDN_POCKETBASE` como variável de runtime com o hostname público do PocketBase.
-
----
-
-## 📁 Estrutura do Repositório
+## Estrutura
 
 ```text
 .
-├── .env.example            # Exemplo centralizado de variáveis de ambiente
-├── docker-compose.yml      # Configuração Docker para desenvolvimento local
 ├── apps/
-│   ├── pocketbase/         # Backend PocketBase
+│   ├── pocketbase/
 │   │   ├── Dockerfile
-│   │   └── pb_migrations/  # Migrações automáticas em JS
-│   └── web/                # Frontend SvelteKit
-│       ├── Dockerfile
-│       ├── default.conf    # Configuração Nginx para rotas SPA
-│       ├── package.json
-│       └── src/
-│           ├── lib/
-│           │   └── pocketbase.ts # Cliente do PocketBase pré-configurado
-│           └── routes/
-│               └── +page.svelte  # Gerenciador de Batatas 🥔
+│   │   └── pb_migrations/
+│   └── web/
+│       ├── src/lib/
+│       └── src/routes/
 ├── scripts/
-│   ├── rodar.ps1 / .bat / .sh             # Script orquestrador principal
-│   ├── rodar-com-docker.ps1 / .bat / .sh  # Execução via Docker
-│   └── rodar-sem-docker.ps1 / .bat / .sh  # Execução local direta (sem Docker)
-└── README.md
+│   └── rodar.ps1 / .bat / .sh
+├── docker-compose.yml
+└── .env.example
 ```
