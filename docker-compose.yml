@@ -19,8 +19,13 @@ services:
       - PB_SUPERUSER_EMAIL=${PB_SUPERUSER_EMAIL:-admin@admin.com}
       - PB_SUPERUSER_PASSWORD=${PB_SUPERUSER_PASSWORD:-admin123456}
       - SERVICE_URL_POCKETBASE_8090=/
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
+      - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME}
     env_file:
       - .env
+    ports:
+      - "8090:8090"
     expose:
       - "8090"
     volumes:
@@ -43,6 +48,8 @@ services:
     environment:
       SERVICE_URL_WEB: /
       POCKETBASE_HOST: "${SERVICE_FQDN_POCKETBASE}"
+    ports:
+      - "80:80"
     expose:
       - "80"
     
