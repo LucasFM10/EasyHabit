@@ -24,8 +24,6 @@ services:
       - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME}
     env_file:
       - .env
-    ports:
-      - "8090:8090"
     expose:
       - "8090"
     volumes:
@@ -48,8 +46,6 @@ services:
     environment:
       SERVICE_URL_WEB: /
       POCKETBASE_HOST: "${SERVICE_FQDN_POCKETBASE}"
-    ports:
-      - "80:80"
     expose:
       - "80"
     
