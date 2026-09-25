@@ -137,16 +137,21 @@
 		return `${year}-${month}-${day}`;
 	}
 
+	/** Converte uma string ISO armazenada (pode ser UTC) para a chave de data no fuso local. */
+	function localDateKeyFromISO(isoString: string) {
+		return dateKey(new Date(isoString));
+	}
+
 	function isAppointmentOnDay(appointment: Appointment, key: string) {
-		const startKey = appointment.starts_at.substring(0, 10);
-		const endKey = appointment.ends_at.substring(0, 10);
+		const startKey = localDateKeyFromISO(appointment.starts_at);
+		const endKey = localDateKeyFromISO(appointment.ends_at);
 		return key >= startKey && key <= endKey;
 	}
 
 	function isMultiDayOrAllDay(appointment: Appointment) {
 		if (appointment.all_day) return true;
-		const startKey = appointment.starts_at.substring(0, 10);
-		const endKey = appointment.ends_at.substring(0, 10);
+		const startKey = localDateKeyFromISO(appointment.starts_at);
+		const endKey = localDateKeyFromISO(appointment.ends_at);
 		return startKey !== endKey;
 	}
 
@@ -481,6 +486,16 @@
 		showEventModal = true;
 	}
 
+	/** Retorna uma string ISO 8601 preservando o fuso horário local (ex.: "2026-09-26T19:00:00-03:00"). */
+	function toLocalISOString(date: Date): string {
+		const pad = (n: number) => String(n).padStart(2, '0');
+		const offset = -date.getTimezoneOffset();
+		const sign = offset >= 0 ? '+' : '-';
+		const absOffset = Math.abs(offset);
+		const tzStr = `${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`;
+		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${tzStr}`;
+	}
+
 	async function saveEvent(event: SubmitEvent) {
 		event.preventDefault();
 		if (!auth.user) return;
@@ -489,8 +504,9 @@
 		let endsAtStr: string;
 
 		if (eventForm.allDay) {
-			startsAtStr = `${eventForm.startDate}T00:00:00.000Z`;
-			endsAtStr = `${eventForm.endDate}T23:59:59.999Z`;
+			// Para dia inteiro, usa meia-noite e 23:59 no fuso local via offset
+			startsAtStr = toLocalISOString(new Date(`${eventForm.startDate}T00:00:00`));
+			endsAtStr = toLocalISOString(new Date(`${eventForm.endDate}T23:59:59`));
 		} else {
 			const starts = new Date(`${eventForm.startDate}T${eventForm.startTime}:00`);
 			const ends = new Date(`${eventForm.endDate}T${eventForm.endTime}:00`);
@@ -499,8 +515,9 @@
 				formError = 'O horário ou data de término deve ser posterior ao início.';
 				return;
 			}
-			startsAtStr = starts.toISOString();
-			endsAtStr = ends.toISOString();
+			// Salva preservando o fuso local para evitar que a data mude ao converter para UTC
+			startsAtStr = toLocalISOString(starts);
+			endsAtStr = toLocalISOString(ends);
 		}
 
 		saving = true;
